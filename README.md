@@ -13,4 +13,4 @@ i.e. [bsc-api-key]|[your-wallet-address]<br/>
 <img src='https://i.imgur.com/JvL8a0t.png' width='300px'/>
 
 
-shoutout to https://github.com/kenchambers/scriptable-crypto-balance-widget for sharing his idea/code
+shoutout to https://github.com/kenchambers/scriptable-crypto-balance-widget and https://github.com/aCallum/SafePi/blob/main/main.py for sharing their ideas/codez
