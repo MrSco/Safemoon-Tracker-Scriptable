@@ -1,5 +1,5 @@
 # Safemoon-Tracker-Scriptable
-<img src='https://i.imgur.com/b5kA7H3.png' width='300px'/>
+<img src='https://i.imgur.com/dR9ErYx.png' width='300px'/>
 
 # Edit Widget 
 set When Interacting to 'Run Script' <br/>
