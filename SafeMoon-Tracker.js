@@ -183,51 +183,81 @@ async function getChartUrl(percentChange) {
   let kline = await getKline(settings.CURRENCY_PAIR);
   let x = [];
   let y = [];
+  let baseline = [];
   let min = 0
   let max = 0;
   for (var i=0; i<kline.data.length; i++) {
     var p = kline.data[i];
     var d = new Date(parseInt(p[0])).toLocaleDateString("en-US");
     var t = new Date(parseInt(p[0])).toLocaleTimeString("en-US");
-    y.push(d+' '+t);
-    x.push(parseFloat(p[5]));
+    x.push(d+' '+t);
+    y.push(parseFloat(p[5]));
+    baseline.push(parseFloat(kline.data[0][5]));
   }
-  min = Math.min(...x)
-  max = Math.max(...x)
+  min = Math.min(...y)
+  max = Math.max(...y)
   let chartObj = {
-    type: 'line',
-    data: {
-      labels: y,
-      datasets: [
+    "type": "line",
+    "data":
+    {
+      "labels": x,
+      "datasets": [
         {
-          borderColor: percentChange > 0 ? 'green' : 'red',
-          data: x,
-          fill: false,
+          "borderColor": percentChange > 0 ? 'green' : 'red',
+          "data": y,
+          "fill": 0
+        },
+        {
+          backgroundColor: 'transparent',
+          "borderWidth": 10,
+          "borderDash": [3, 6],
+          "borderColor": "lightgray",
+          "data": baseline
         }
       ]
     },
-    options: {
-      responsive: true,
-      title: {
-        display: false,
+    "options":
+    {
+      "responsive": 1,
+      "title":
+      {
+        "display": 0
       },
-      legend: {display: false},
-      elements: {
-        point:{
-            radius: 0
+      "legend":
+      {
+          "display": 0
+      },
+      "elements":
+      {
+        "point":
+        {
+          "radius": 0
         }
       },
-      scales: {
-        xAxes: [{display: false}],
-        yAxes: [
+      "scales":
+      {
+        "xAxes": [
+        {
+        "scaleLabel": {
+          "display": 0,
+        },
+        "gridLines": {
+          "display": 0
+        },
+        "ticks":
           {
-            display: false,
-            ticks: {
-              min: min,
-              max: max,
-            }
+            "display": 0
           }
-        ]
+        }],
+        "yAxes": [
+        {
+          "display": 0,
+          "ticks":
+          {          
+            "min": min,
+            "max": max
+          }
+        }]
       }
     }
   }
