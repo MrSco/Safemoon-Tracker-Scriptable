@@ -9,7 +9,10 @@ const settings = {
   CURRENCY_PAIR: (friendlyName).toUpperCase() + '_USDT',
   CONTRACT_ADDRESS: '0x8076c74c5e3f5852037f31ff0093eeb8c8add8d3',
   TICKER_API_URL: 'https://data.gateio.life/api2/1/ticker',
+  KLINE_API_URL: 'https://data.gateapi.io/api2/1/candlestick2/{0}?group_sec=60&range_hour=1',
   BSCSCAN_API_URL: 'https://api.bscscan.com/api?module=account&action=tokenbalance&contractaddress={0}&address={1}&tag=latest&apikey={2}',
+  CHART_API_URL: 'https://quickchart.io/chart?w=100&h=50&c=',
+  CHART_URL: 'https://poocoin.app/tokens/',
   PRICE_FACTOR: 0.000000001
 };
 const imgReq = new Request(settings.LOGO_URL)
@@ -54,6 +57,13 @@ async function createWidget() {
   const largeName = largeNameStack.addText(settings.FRIENDLY_NAME)
   largeName.font = largerFont
   largeName.textColor = new Color('#ffffff')
+  // CHART IMAGE
+  largeNameStack.addSpacer(50)
+  const chartUrl = encodeURI(await getChartUrl(percentChange));
+  const chartImgReq = new Request(chartUrl)
+  const chartImage = largeNameStack.addImage(await chartImgReq.loadImage())
+  chartImage.imageSize = new Size(75, 35)
+  chartImage.url = settings.CHART_URL + settings.CONTRACT_ADDRESS
   // TOKEN IMAGE
   const headerImageStack = rightContainerStack.addStack()
   let tokenImage = headerImageStack.addImage(tokenImg)
@@ -117,6 +127,19 @@ async function getBSCPrice(pair) {
   return ticker;
 }
 
+async function getKline(pair) {
+  let kline = {};
+  let requestUrl = settings.KLINE_API_URL.replace('{0}', pair);
+  try {
+    let request = new Request(requestUrl)
+    request.method = 'get';
+    kline = await request.loadJSON()
+  } catch (e) {
+    console.log(e)
+  }
+  return kline;
+}
+
 async function getBSCWallet(contract, walletAddress) {
   let requestUrl = settings.BSCSCAN_API_URL
     .replace('{0}', contract)
@@ -154,4 +177,60 @@ function formatDate(date) {
   const dF = new DateFormatter()
   dF.dateFormat = 'MM/dd/yy h:mm:ss a'
   return dF.string(date)
+}
+
+async function getChartUrl(percentChange) {
+  let kline = await getKline(settings.CURRENCY_PAIR);
+  let x = [];
+  let y = [];
+  let min = 0
+  let max = 0;
+  for (var i=0; i<kline.data.length; i++) {
+    var p = kline.data[i];
+    var d = new Date(parseInt(p[0])).toLocaleDateString("en-US");
+    var t = new Date(parseInt(p[0])).toLocaleTimeString("en-US");
+    y.push(d+' '+t);
+    x.push(parseFloat(p[5]));
+  }
+  min = Math.min(...x)
+  max = Math.max(...x)
+  let chartObj = {
+    type: 'line',
+    data: {
+      labels: y,
+      datasets: [
+        {
+          borderColor: percentChange > 0 ? 'green' : 'red',
+          data: x,
+          fill: false,
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      title: {
+        display: false,
+      },
+      legend: {display: false},
+      elements: {
+        point:{
+            radius: 0
+        }
+      },
+      scales: {
+        xAxes: [{display: false}],
+        yAxes: [
+          {
+            display: false,
+            ticks: {
+              min: min,
+              max: max,
+            }
+          }
+        ]
+      }
+    }
+  }
+  let chartUrl = settings.CHART_API_URL + JSON.stringify(chartObj)
+  return chartUrl
 }
