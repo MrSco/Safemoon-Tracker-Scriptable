@@ -11,7 +11,7 @@ const settings = {
   TICKER_API_URL: 'https://data.gateio.life/api2/1/ticker',
   KLINE_API_URL: 'https://data.gateapi.io/api2/1/candlestick2/{0}?group_sec=60&range_hour=1',
   BSCSCAN_API_URL: 'https://api.bscscan.com/api?module=account&action=tokenbalance&contractaddress={0}&address={1}&tag=latest&apikey={2}',
-  CHART_API_URL: 'https://quickchart.io/chart?w=100&h=50&c=',
+  CHART_API_URL: 'https://quickchart.io/chart?w=300&h=50&c=',
   CHART_URL: 'https://poocoin.app/tokens/',
   PRICE_FACTOR: 0.000000001
 };
@@ -54,15 +54,15 @@ async function createWidget() {
   // Larger Name
   let largerFont = Font.title1()
   const largeNameStack = leftContainerStack.addStack()
-  const largeName = largeNameStack.addText(settings.FRIENDLY_NAME)
-  largeName.font = largerFont
-  largeName.textColor = new Color('#ffffff')
+  //const largeName = largeNameStack.addText(settings.FRIENDLY_NAME)
+  //largeName.font = largerFont
+  //largeName.textColor = new Color('#ffffff')
   // CHART IMAGE
-  largeNameStack.addSpacer(50)
+  //largeNameStack.addSpacer(50)
   const chartUrl = encodeURI(await getChartUrl(percentChange));
   const chartImgReq = new Request(chartUrl)
   const chartImage = largeNameStack.addImage(await chartImgReq.loadImage())
-  chartImage.imageSize = new Size(75, 35)
+  chartImage.imageSize = new Size(300, 35)
   chartImage.url = settings.CHART_URL + settings.CONTRACT_ADDRESS
   // TOKEN IMAGE
   const headerImageStack = rightContainerStack.addStack()
@@ -209,8 +209,8 @@ async function getChartUrl(percentChange) {
         },
         {
           backgroundColor: 'transparent',
-          "borderWidth": 10,
-          "borderDash": [3, 6],
+          "borderWidth": 3,
+          "borderDash": [1, 10],
           "borderColor": "lightgray",
           "data": baseline
         }
