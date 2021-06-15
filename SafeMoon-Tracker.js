@@ -1,10 +1,13 @@
+// Variables used by Scriptable.
+// These must be at the very top of the file. Do not edit.
+// icon-color: teal; icon-glyph: user-astronaut;
 let widgetParams = (args.widgetParameter || '').split('|')
 let friendlyName = 'SafeMoon'
 const settings = {
   BSCSCAN_API_KEY: widgetParams[0] || 'C524VST55HHQZN4A614DZB515D8P1PW86X', // WAP bscscan account api key
   WALLET_ADDRESS: widgetParams[1] || '0x8c128dba2cb66399341aa877315be1054be75da8',
   WIDGET_URL: 'https://safemoon.net',
-  LOGO_URL: 'https://safemoon.net/img/174x174.png',
+  LOGO_URL: 'https://github.com/MrSco/Safemoon-Tracker-Scriptable/raw/07c499a09c1beef113d9a2254fab738c9d4ae036/174x174.png',
   FRIENDLY_NAME: friendlyName,
   CURRENCY_PAIR: (friendlyName).toUpperCase() + '_USDT',
   CONTRACT_ADDRESS: '0x8076c74c5e3f5852037f31ff0093eeb8c8add8d3',
@@ -186,7 +189,8 @@ async function getChartUrl(percentChange) {
   let baseline = [];
   let min = 0
   let max = 0;
-  for (var i=0; i<kline.data.length; i++) {
+  let k = kline.data.length;
+  for (var i=0; i<k; i++) {
     var p = kline.data[i];
     var d = new Date(parseInt(p[0])).toLocaleDateString("en-US");
     var t = new Date(parseInt(p[0])).toLocaleTimeString("en-US");
