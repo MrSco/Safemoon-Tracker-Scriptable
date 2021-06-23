@@ -72,7 +72,7 @@ async function createWidget() {
   const headerImageStack = rightContainerStack.addStack()
   let tokenImage = headerImageStack.addImage(tokenImg)
   tokenImage.imageSize = new Size(40, 40)
-  tokenImage.url = settings.WIDGET_URL
+  tokenImage.url = tokenInfo.homepage
   // Large Wallet Bal
   let largeFont = Font.title2()
   const largeBalanceStack = leftContainerStack.addStack()
@@ -179,6 +179,7 @@ async function getBalance() {
       last: currentPrice.toFixed(numberOfDecimals(currentPrice)),
       tokenImgUrl: ticker?.image?.small,
       walletBalance: walletBalance,
+      homepage: ticker?.links?.homepage[0] || ticker?.links?.homepage[1] || ticker?.links?.homepage[2] || '',
       percentChange: (ticker?.market_data?.price_change_percentage_24h || 0).toFixed(2)
     }
   return balance
