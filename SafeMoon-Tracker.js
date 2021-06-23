@@ -96,7 +96,7 @@ async function createWidget() {
   // Small Percent
   let changeIsUp = percentChange > 0
   percentChange = (percentChange * (changeIsUp ? 1 : -1)).toString()
-  const smallPercent = smallPriceStack.addText((changeIsUp ? ' ▲' : ' ▼') + ' (' + percentChange + '%) 24hr')
+  const smallPercent = smallPriceStack.addText((changeIsUp ? ' ▲' : ' ▼') + ' (' + percentChange + '%)')
   smallPercent.font = smallFont
   smallPercent.textColor = (changeIsUp ? Color.green() : Color.red()) 
   let now = Date.now()   
