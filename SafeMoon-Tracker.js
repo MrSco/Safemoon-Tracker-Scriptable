@@ -1,25 +1,20 @@
-// Variables used by Scriptable.
-// These must be at the very top of the file. Do not edit.
-// icon-color: teal; icon-glyph: user-astronaut;
 let widgetParams = (args.widgetParameter || '').split('|')
-let friendlyName = 'SafeMoon'
 const settings = {
-  BSCSCAN_API_KEY: widgetParams[0] || 'C524VST55HHQZN4A614DZB515D8P1PW86X', // WAP bscscan account api key
-  WALLET_ADDRESS: widgetParams[1] || '0x8c128dba2cb66399341aa877315be1054be75da8',
-  WIDGET_URL: 'https://safemoon.net',
-  LOGO_URL: 'https://github.com/MrSco/Safemoon-Tracker-Scriptable/raw/07c499a09c1beef113d9a2254fab738c9d4ae036/174x174.png',
-  FRIENDLY_NAME: friendlyName,
-  CURRENCY_PAIR: (friendlyName).toUpperCase() + '_USDT',
-  CONTRACT_ADDRESS: '0x8076c74c5e3f5852037f31ff0093eeb8c8add8d3',
-  TICKER_API_URL: 'https://data.gateio.life/api2/1/ticker',
-  KLINE_API_URL: 'https://data.gateapi.io/api2/1/candlestick2/{0}?group_sec=60&range_hour=1',
+  BSCSCAN_API_KEY: widgetParams[0] || 'C524VST55HHQZN4A614DZB515D8P1PW86X', // WAP default bscscan account api key
+  WALLET_ADDRESS: widgetParams[1] || '0x8c128dba2cb66399341aa877315be1054be75da8', // top safemoon holder default wallet address
+  CONTRACT_ADDRESS: widgetParams[2] || '0x8076c74c5e3f5852037f31ff0093eeb8c8add8d3', // SAFEMOON default contract address
+  TOKEN_DECIMALS: widgetParams[3] || 9, //SAFEMOON default decimals
   BSCSCAN_API_URL: 'https://api.bscscan.com/api?module=account&action=tokenbalance&contractaddress={0}&address={1}&tag=latest&apikey={2}',
-  CHART_API_URL: 'https://quickchart.io/chart?w=300&h=50&c=',
+  BSCSCAN_URL: 'https://bscscan.com/token/',
+  CHART_API_URL: 'https://quickchart.io/chart?',
   CHART_URL: 'https://poocoin.app/tokens/',
-  PRICE_FACTOR: 0.000000001
+  DEFAULT_TOKEN_IMG: 'https://raw.githubusercontent.com/MrSco/Safemoon-Tracker-Scriptable/main/bsc-logo.png',
+  COIN_GECKO_API_URL: 'https://api.coingecko.com/api/v3/coins/binance-smart-chain/contract/{0}',
+  CHART_WIDTH: 300,
+  CHART_HEIGHT: 50,
 };
-const imgReq = new Request(settings.LOGO_URL)
-const tokenImg = await imgReq.loadImage()
+const decimalFactor = "0.".padEnd(settings.TOKEN_DECIMALS, 0) + "01";
+
 // ************************************
 // execute widget
 let widget = await createWidget()
@@ -35,10 +30,11 @@ async function createWidget() {
   let w = new ListWidget()
   // call async request to fetch wallet amount
   let tokenInfo = await getBalance()
-  let balance = tokenInfo['balance']
-  let walletBalance = tokenInfo['walletBalance'].toFixed(4)
-  let price = tokenInfo['last']
-  let percentChange = tokenInfo['percentChange']
+  let balance = tokenInfo.balance
+  let walletBalance = tokenInfo.walletBalance
+  let price = tokenInfo.last
+  let percentChange = tokenInfo.percentChange
+  //console.log(tokenInfo)
   //background color
   w.backgroundColor = new Color('#000000')
   // **************************************
@@ -55,19 +51,24 @@ async function createWidget() {
   // TOP LEFT STACK:
   // **************************************
   // Larger Name
-  let largerFont = Font.title1()
+  //let largerFont = Font.title1()
   const largeNameStack = leftContainerStack.addStack()
-  //const largeName = largeNameStack.addText(settings.FRIENDLY_NAME)
+  //const largeName = largeNameStack.addText(tokenInfo.tokenName)
   //largeName.font = largerFont
   //largeName.textColor = new Color('#ffffff')
   // CHART IMAGE
   //largeNameStack.addSpacer(50)
-  const chartUrl = encodeURI(await getChartUrl(percentChange));
+  const chartUrl = encodeURI(await GetCoinGeckoChartURL(percentChange));
+  //console.log(chartUrl);
   const chartImgReq = new Request(chartUrl)
   const chartImage = largeNameStack.addImage(await chartImgReq.loadImage())
-  chartImage.imageSize = new Size(300, 35)
+  chartImage.imageSize = new Size(settings.CHART_WIDTH, settings.CHART_HEIGHT-15)
   chartImage.url = settings.CHART_URL + settings.CONTRACT_ADDRESS
+
   // TOKEN IMAGE
+  const tokenImgUrl = tokenInfo.tokenImgUrl ? tokenInfo.tokenImgUrl : settings.DEFAULT_TOKEN_IMG
+  const imgReq = new Request(tokenInfo.tokenImgUrl)
+  const tokenImg = await imgReq.loadImage()
   const headerImageStack = rightContainerStack.addStack()
   let tokenImage = headerImageStack.addImage(tokenImg)
   tokenImage.imageSize = new Size(40, 40)
@@ -95,7 +96,7 @@ async function createWidget() {
   // Small Percent
   let changeIsUp = percentChange > 0
   percentChange = (percentChange * (changeIsUp ? 1 : -1)).toString()
-  const smallPercent = smallPriceStack.addText((changeIsUp ? ' ▲' : ' ▼') + ' (' + percentChange + '%)')
+  const smallPercent = smallPriceStack.addText((changeIsUp ? ' ▲' : ' ▼') + ' (' + percentChange + '%) 24hr')
   smallPercent.font = smallFont
   smallPercent.textColor = (changeIsUp ? Color.green() : Color.red()) 
   let now = Date.now()   
@@ -117,26 +118,32 @@ function showGradientBackground(widget) {
   widget.backgroundGradient = gradient
 }
 
-async function getBSCPrice(pair) {
+async function getBSCPrice() {
   let ticker = {};
-  let requestUrl = settings.TICKER_API_URL + '/' + pair;
+  let coinGeckoApiUrl = settings.COIN_GECKO_API_URL.replace('{0}', settings.CONTRACT_ADDRESS);
+  let requestUrl = coinGeckoApiUrl;
   try {
     let request = new Request(requestUrl)
     request.method = 'get';
     ticker = await request.loadJSON()
+    //console.log(ticker);
   } catch (e) {
     console.log(e)
   }
   return ticker;
 }
 
-async function getKline(pair) {
+async function getKline() {
   let kline = {};
-  let requestUrl = settings.KLINE_API_URL.replace('{0}', pair);
+  let coinGeckoApiUrl = settings.COIN_GECKO_API_URL.replace('{0}', settings.CONTRACT_ADDRESS);
+  let to = parseInt(Date.now()/1000)
+  let from = to-(3600*1) // 1 hour ago
+  let requestUrl = `${coinGeckoApiUrl}/market_chart/range?vs_currency=usd&from=${from}&to=${to}`
   try {
     let request = new Request(requestUrl)
     request.method = 'get';
     kline = await request.loadJSON()
+    //console.log(kline);
   } catch (e) {
     console.log(e)
   }
@@ -144,30 +151,35 @@ async function getKline(pair) {
 }
 
 async function getBSCWallet(contract, walletAddress) {
+  let wallet = {}
   let requestUrl = settings.BSCSCAN_API_URL
     .replace('{0}', contract)
     .replace('{1}', walletAddress)
     .replace('{2}', settings.BSCSCAN_API_KEY);
-  let walletBalance = 0;
   try {
     let request = new Request(requestUrl)
     request.method = "get";
-    let response = await request.loadJSON()
-    walletBalance = parseFloat(response['result']) * settings.PRICE_FACTOR
+    wallet = await request.loadJSON()
+    //console.log(wallet)
   } catch (e) {
        console.log(e)
   }
-  return walletBalance
+  return wallet
 }
 
 async function getBalance() {
-  let walletBalance = await getBSCWallet(settings.CONTRACT_ADDRESS, settings.WALLET_ADDRESS)
-  let ticker = await getBSCPrice(settings.CURRENCY_PAIR)
+  let wallet = await getBSCWallet(settings.CONTRACT_ADDRESS, settings.WALLET_ADDRESS)  
+  let ticker = await getBSCPrice()
+  let currentPrice = parseFloat(ticker?.market_data?.current_price.usd || 0)
+  let tokenBalance = (wallet?.result || 0)
+  let walletBalance = (tokenBalance*decimalFactor).toFixed(2)
   let balance = {
-      balance: (walletBalance * ticker['last']).toFixed(2),
-      last: ticker['last'],
+      tokenName: ticker.name,
+      balance: (walletBalance * currentPrice).toFixed(2),
+      last: currentPrice.toFixed(numberOfDecimals(currentPrice)),
+      tokenImgUrl: ticker?.image?.small,
       walletBalance: walletBalance,
-      percentChange: ticker['percentChange']
+      percentChange: (ticker?.market_data?.price_change_percentage_24h || 0).toFixed(2)
     }
   return balance
 }
@@ -182,50 +194,52 @@ function formatDate(date) {
   return dF.string(date)
 }
 
-async function getChartUrl(percentChange) {
-  let kline = await getKline(settings.CURRENCY_PAIR);
+
+async function GetCoinGeckoChartURL(percentChange) {
+  let kline = await getKline();
+  let data = kline.prices
   let x = [];
   let y = [];
   let baseline = [];
   let min = 0
   let max = 0;
-  let k = kline.data.length;
-  for (var i=0; i<k; i++) {
-    var p = kline.data[i];
+  for (var i=0; i<data.length; i++) {
+    var p = data[i];
     var d = new Date(parseInt(p[0])).toLocaleDateString("en-US");
     var t = new Date(parseInt(p[0])).toLocaleTimeString("en-US");
     x.push(d+' '+t);
-    y.push(parseFloat(p[5]));
-    baseline.push(parseFloat(kline.data[0][5]));
+    y.push(parseFloat(p[1]));
+    baseline.push(parseFloat(data[0][1]));
   }
   min = Math.min(...y)
   max = Math.max(...y)
-  let chartObj = {
-    "type": "line",
-    "data":
-    {
-      "labels": x,
+
+  let chartJson = {
+      "type": "line",
+      "data":
+      {
+      "labels": "",
       "datasets": [
-        {
-          "borderColor": percentChange > 0 ? 'green' : 'red',
-          "data": y,
+          {
+          "borderColor": "",
+          "data": "",
           "fill": 0
-        },
-        {
-          backgroundColor: 'transparent',
+          },
+          {
+          "backgroundColor": "transparent",
           "borderWidth": 3,
           "borderDash": [1, 10],
           "borderColor": "lightgray",
-          "data": baseline
-        }
+          "data": ""
+          }
       ]
-    },
-    "options":
-    {
+      },
+      "options":
+      {
       "responsive": 1,
       "title":
       {
-        "display": 0
+          "display": 0
       },
       "legend":
       {
@@ -233,38 +247,55 @@ async function getChartUrl(percentChange) {
       },
       "elements":
       {
-        "point":
-        {
+          "point":
+          {
           "radius": 0
-        }
+          }
       },
       "scales":
       {
-        "xAxes": [
-        {
-        "scaleLabel": {
-          "display": 0,
-        },
-        "gridLines": {
-          "display": 0
-        },
-        "ticks":
+          "xAxes": [
           {
-            "display": 0
+          "scaleLabel": {
+          "display": 0
+          },
+          "gridLines": {
+          "display": 0
+          },
+          "ticks":
+          {
+              "display": 0
           }
-        }],
-        "yAxes": [
-        {
+          }],
+          "yAxes": [
+          {
           "display": 0,
           "ticks":
           {          
-            "min": min,
-            "max": max
+              "min": "",
+              "max": ""
           }
-        }]
+          }]
       }
-    }
-  }
-  let chartUrl = settings.CHART_API_URL + JSON.stringify(chartObj)
+      }
+  };
+  chartJson.data.labels = x
+  chartJson.data.datasets[0].borderColor = percentChange > 0 ? 'green' : 'red'
+  chartJson.data.datasets[0].data = y
+  chartJson.data.datasets[1].data = baseline
+  chartJson.options.scales.yAxes[0].ticks.min = min
+  chartJson.options.scales.yAxes[0].ticks.max = max
+  let chartUrl = settings.CHART_API_URL + `w=${settings.CHART_WIDTH}&h=${settings.CHART_HEIGHT}&c=` + JSON.stringify(chartJson)
   return chartUrl
 }
+
+function numberOfDecimals(num) {
+  let d = 10;
+  if (num > .001)
+    d = 6
+  if (num > .1)
+    d = 3
+  if (num > 1)
+    d = 2
+  return d
+};
