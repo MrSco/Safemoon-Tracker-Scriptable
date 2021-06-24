@@ -1,5 +1,5 @@
 # Safemoon-Tracker-Scriptable
-<img src='https://i.imgur.com/Ekj8TLN.jpg' width='300px'/>
+<img src='https://i.imgur.com/lNGGlgp_d.jpg' width='300px'/>
 
 # Install Scriptable
 
