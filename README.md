@@ -1,4 +1,4 @@
-# Safemoon-Tracker-Scriptable
+# Token-Tracker-Scriptable
 <img src='https://i.imgur.com/uG4XnCf.png' width='300px'/>
 
 # Install Scriptable
