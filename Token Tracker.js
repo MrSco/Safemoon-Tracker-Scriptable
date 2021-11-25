@@ -1,6 +1,9 @@
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
 // icon-color: teal; icon-glyph: user-astronaut;
+// Variables used by Scriptable.
+// These must be at the very top of the file. Do not edit.
+// icon-color: teal; icon-glyph: user-astronaut;
 let widgetParams = (args.widgetParameter || '').split('|')
 let shortcutParams = (args.shortcutParameter || '').split('|')
 const settings = {
@@ -12,10 +15,13 @@ const settings = {
   BSCSCAN_URL: 'https://bscscan.com/token/',
   CHART_API_URL: 'https://quickchart.io/chart?',
   CHART_URL: 'https://poocoin.app/tokens/',
-  DEFAULT_TOKEN_IMG: 'https://raw.githubusercontent.com/MrSco/Safemoon-Tracker-Scriptable/main/bsc-logo.png',
+  DEFAULT_TOKEN_IMG: 'https://raw.githubusercontent.com/MrSco/Safemoon-Tracker-Scriptable/main/bsc-logo.png',  
+  DEFAULT_TOKEN_HOMEPAGE: 'https://safemoon.net',
   COIN_GECKO_API_URL: 'https://api.coingecko.com/api/v3/coins/binance-smart-chain/contract/{0}',
   CHART_WIDTH: 300,
   CHART_HEIGHT: 50,
+  TOKEN_LOGO_WIDTH: 35,
+  TOKEN_LOGO_HEIGHT: 35
 };
 const decimalFactor = "0.".padEnd(settings.TOKEN_DECIMALS, 0) + "01";
 
@@ -27,11 +33,16 @@ if (config.runsInWidget) {
 } else {
   widget.presentMedium()
 }
+
+const SHORTCUTNAME = "Refresh All Widgets";
+const BASEURL = "shortcuts://run-shortcut?name=";
+Safari.open(BASEURL + encodeURI(SHORTCUTNAME));
 Script.complete()
 // ************************************
 async function createWidget() {
   // declare widget
   let w = new ListWidget()
+  //w.setPadding(5,5,5,5)
   // call async request to fetch wallet amount
   let tokenInfo = await getBalance()
   let balance = tokenInfo.balance
@@ -44,59 +55,37 @@ async function createWidget() {
   // **************************************
   // MAIN CONTAINER
   let mainContainerStack = w.addStack()
-  // TOP CONTAINER
-  let leftContainerStack = mainContainerStack.addStack()
-  leftContainerStack.layoutVertically()
-  leftContainerStack.size = new Size(275, 150)
-  // TOP RIGHT STACK
-  let rightContainerStack = mainContainerStack.addStack()
-  rightContainerStack.size = new Size(40, 140)
-  rightContainerStack.bottomAlignContent()
-  // TOP LEFT STACK:
-  // **************************************
-  // Larger Name
-  //let largerFont = Font.title1()
-  const largeNameStack = leftContainerStack.addStack()
-  //const largeName = largeNameStack.addText(tokenInfo.tokenName)
-  //largeName.font = largerFont
-  //largeName.textColor = new Color('#ffffff')
+  mainContainerStack.layoutVertically()
+
   // CHART IMAGE
-  //largeNameStack.addSpacer(50)
+  const chartStack = mainContainerStack.addStack()
+  chartStack.centerAlignContent()
   const chartUrl = encodeURI(await GetCoinGeckoChartURL(percentChange));
   //console.log(chartUrl);
-  const chartImgReq = new Request(chartUrl)
-  const chartImage = largeNameStack.addImage(await chartImgReq.loadImage())
-  chartImage.imageSize = new Size(settings.CHART_WIDTH, settings.CHART_HEIGHT-15)
-  chartImage.url = settings.CHART_URL + settings.CONTRACT_ADDRESS
-
-  // TOKEN IMAGE
-  const tokenImgUrl = tokenInfo.tokenImgUrl ? tokenInfo.tokenImgUrl : settings.DEFAULT_TOKEN_IMG
-  const imgReq = new Request(tokenInfo.tokenImgUrl)
-  const tokenImg = await imgReq.loadImage()
-  const headerImageStack = rightContainerStack.addStack()
-  let tokenImage = headerImageStack.addImage(tokenImg)
-  tokenImage.imageSize = new Size(40, 40)
-  tokenImage.url = tokenInfo.homepage
+  if (chartUrl) {
+    const chartImgReq = new Request(chartUrl)
+    const chartImage = chartStack.addImage(await chartImgReq.loadImage())
+    chartImage.imageSize = new Size(settings.CHART_WIDTH, settings.CHART_HEIGHT-15)
+    chartImage.url = settings.CHART_URL + settings.CONTRACT_ADDRESS  
+  }
+  else {
+    chartStack.addText('chart error')
+  }
   // Large Wallet Bal
   let largeFont = Font.title2()
-  const largeBalanceStack = leftContainerStack.addStack()
+  const largeBalanceStack = mainContainerStack.addStack()
   let formattedBalance = formatNumber(walletBalance.toString().split('.')[0]) + '.' + walletBalance.toString().split('.')[1]
   const largeBalance = largeBalanceStack.addText(formattedBalance)
   largeBalance.font = largeFont
   largeBalance.textColor = new Color('#ffffff')
-  // BOTTOM LEFT STACK:
-  // **************************************
+
   // Small Price
   let smallFont = Font.body(8)
-  const smallPriceStack = leftContainerStack.addStack()
+  const smallPriceStack = mainContainerStack.addStack()
   const smallPrice = smallPriceStack.addText('@ ' + (price).toString())
   smallPrice.font = smallFont
   smallPrice.textColor = new Color('#ffffff')
-  // Small Bal
-  const smallBalanceStack = leftContainerStack.addStack()
-  const smallBalance = smallBalanceStack.addText('$' + formatNumber(balance))
-  smallBalance.font = Font.title2()
-  smallBalance.textColor = new Color('#ffffff')
+
   // Small Percent
   let changeIsUp = percentChange > 0
   percentChange = (percentChange * (changeIsUp ? 1 : -1)).toString()
@@ -104,10 +93,42 @@ async function createWidget() {
   smallPercent.font = smallFont
   smallPercent.textColor = (changeIsUp ? Color.green() : Color.red()) 
   let now = Date.now()   
+
+  // Small Bal
+  const smallBalanceStack = mainContainerStack.addStack()
+  const smallBalance = smallBalanceStack.addText('$' + formatNumber(balance))
+  smallBalance.font = Font.title2()
+  smallBalance.textColor = new Color('#ffffff')
+
   // Smaller last update
-  const smallUpdated = leftContainerStack.addText('Updated: ' + formatDate(new Date(now)))
+  const bottomRowStack = mainContainerStack.addStack()
+  const bottomRowLeftStack = bottomRowStack.addStack()
+  bottomRowLeftStack.layoutVertically()
+  bottomRowLeftStack.size = new Size(285, 0)
+  const tokenNameStack = bottomRowLeftStack.addStack()
+  tokenNameStack.centerAlignContent()
+  const tokenName = tokenNameStack.addText(tokenInfo.tokenName)
+  tokenName.font = Font.body(8)
+  tokenName.textColor = new Color('#ffffff')
+  const tokenSymbol = tokenNameStack.addText(' ('+tokenInfo.tokenSymbol.toUpperCase()+')')
+  tokenSymbol.font = Font.caption1()
+  tokenSymbol.textColor = Color.gray()
+  const smallUpdatedStack = bottomRowLeftStack.addStack()
+  const smallUpdated = smallUpdatedStack.addText('Updated: ' + formatDate(new Date(now)))
   smallUpdated.font = Font.caption2()
   smallUpdated.textColor = Color.gray()
+    
+  // TOKEN IMAGE
+  const bottomRowRightStack = bottomRowStack.addStack()
+  const tokenImgUrl = tokenInfo.tokenImgUrl ? tokenInfo.tokenImgUrl : settings.DEFAULT_TOKEN_IMG  
+  
+  const imgReq = new Request(tokenImgUrl);
+  const tokenImg = await imgReq.loadImage();
+  const tokenImageStack = bottomRowRightStack.addStack()
+  let tokenImage = tokenImageStack.addImage(tokenImg);
+  tokenImage.imageSize = new Size(settings.TOKEN_LOGO_WIDTH, settings.TOKEN_LOGO_HEIGHT)
+  tokenImage.url = tokenInfo.homepage || settings.DEFAULT_TOKEN_HOMEPAGE;
+
   // **************************************
   //refresh widget automatically
   let nextRefresh = now + 1000
@@ -147,7 +168,8 @@ async function getKline() {
     let request = new Request(requestUrl)
     request.method = 'get';
     kline = await request.loadJSON()
-    //console.log(kline);
+console.log(requestUrl);
+//     console.log(kline);
   } catch (e) {
     console.log(e)
   }
@@ -160,6 +182,7 @@ async function getBSCWallet(contract, walletAddress) {
     .replace('{0}', contract)
     .replace('{1}', walletAddress)
     .replace('{2}', settings.BSCSCAN_API_KEY);
+  console.log(requestUrl);
   try {
     let request = new Request(requestUrl)
     request.method = "get";
@@ -174,14 +197,15 @@ async function getBSCWallet(contract, walletAddress) {
 async function getBalance() {
   let wallet = await getBSCWallet(settings.CONTRACT_ADDRESS, settings.WALLET_ADDRESS)  
   let ticker = await getBSCPrice()
-  let currentPrice = parseFloat(ticker?.market_data?.current_price.usd || 0)
+  let currentPrice = parseFloat(ticker?.market_data?.current_price?.usd || 0)
   let tokenBalance = (wallet?.result || 0)
   let walletBalance = (tokenBalance*decimalFactor).toFixed(2)
   let balance = {
-      tokenName: ticker.name,
+      tokenName: ticker?.name || '?',
+      tokenSymbol: ticker?.symbol || '?',
       balance: (walletBalance * currentPrice).toFixed(2),
       last: currentPrice.toFixed(numberOfDecimals(currentPrice)),
-      tokenImgUrl: ticker?.image?.small,
+      tokenImgUrl: ticker?.image?.small || '',
       walletBalance: walletBalance,
       homepage: ticker?.links?.homepage[0] || ticker?.links?.homepage[1] || ticker?.links?.homepage[2] || '',
       percentChange: (ticker?.market_data?.price_change_percentage_24h || 0).toFixed(2)
@@ -202,12 +226,13 @@ function formatDate(date) {
 
 async function GetCoinGeckoChartURL(percentChange) {
   let kline = await getKline();
-  let data = kline.prices
+  let data = kline.prices || []
   let x = [];
   let y = [];
   let baseline = [];
   let min = 0
   let max = 0;
+  if (!data) return '';
   for (var i=0; i<data.length; i++) {
     if (i % 2) continue;
     var p = data[i];
