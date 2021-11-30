@@ -11,12 +11,15 @@ const settings = {
   WALLET_ADDRESS: shortcutParams[1] || widgetParams[1] || '0x8c128dba2cb66399341aa877315be1054be75da8', // top safemoon holder default wallet address
   CONTRACT_ADDRESS: shortcutParams[2] || widgetParams[2] || '0x8076c74c5e3f5852037f31ff0093eeb8c8add8d3', // SAFEMOON default contract address
   TOKEN_DECIMALS: shortcutParams[3] || widgetParams[3] || 9, //SAFEMOON default decimals
+  CMC_API_KEY: shortcutParams[4] || widgetParams[4] || 'b6337892-b662-420a-b991-a7f192747500', // WAP default cmc account api key
+  USE_CMC_FOR_PRICE: shortcutParams[5] || widgetParams[5] || '1', // uses coin gecko for current price unless this is set to '1'
   BSCSCAN_API_URL: 'https://api.bscscan.com/api?module=account&action=tokenbalance&contractaddress={0}&address={1}&tag=latest&apikey={2}',
   BSCSCAN_URL: 'https://bscscan.com/token/',
   CHART_API_URL: 'https://quickchart.io/chart?',
   CHART_URL: 'https://poocoin.app/tokens/',
   DEFAULT_TOKEN_IMG: 'https://raw.githubusercontent.com/MrSco/Safemoon-Tracker-Scriptable/main/bsc-logo.png',  
   DEFAULT_TOKEN_HOMEPAGE: 'https://safemoon.net',
+  CMC_API_URL: 'https://pro-api.coinmarketcap.com/v1/cryptocurrency/{0}?CMC_PRO_API_KEY={1}',
   COIN_GECKO_API_URL: 'https://api.coingecko.com/api/v3/coins/binance-smart-chain/contract/{0}',
   CHART_WIDTH: 300,
   CHART_HEIGHT: 50,
@@ -44,7 +47,11 @@ async function createWidget() {
   let w = new ListWidget()
   //w.setPadding(5,5,5,5)
   // call async request to fetch wallet amount
-  let tokenInfo = await getBalance()
+  let tokenInfo = {}
+  if (settings.USE_CMC_FOR_PRICE == '1')
+    tokenInfo = await getBalance_CMC()
+  else
+    tokenInfo = await getBalance()
   let balance = tokenInfo.balance
   let walletBalance = tokenInfo.walletBalance
   let price = tokenInfo.last
@@ -176,6 +183,38 @@ console.log(requestUrl);
   return kline;
 }
 
+async function getBSCPrice_CMC() {
+  let tokenData = {};
+  let cmcApiUrl = settings.CMC_API_URL
+    .replace('{0}', 'info')
+    .replace('{1}', settings.CMC_API_KEY)+'&address='+settings.CONTRACT_ADDRESS;
+  let requestUrl = cmcApiUrl;
+  try {
+    let request = new Request(requestUrl)
+    request.method = 'get';
+    let info = await request.loadJSON()
+    tokenData = info.data[Object.keys(info.data)[0]];
+    console.log(tokenData);
+    let quotes = {};
+    cmcApiUrl = settings.CMC_API_URL
+      .replace('{0}', 'quotes/latest')
+      .replace('{1}', settings.CMC_API_KEY)+'&id='+tokenData.id;
+    requestUrl = cmcApiUrl;
+    try {
+      request = new Request(requestUrl)
+      request.method = 'get';
+      quotes = await request.loadJSON()
+      console.log(quotes);
+      tokenData.quotes = quotes.data[tokenData.id].quote;
+    } catch (e) {
+      console.log(e)
+    }
+  } catch (e) {
+    console.log(e)
+  }
+  return tokenData;
+}
+
 async function getBSCWallet(contract, walletAddress) {
   let wallet = {}
   let requestUrl = settings.BSCSCAN_API_URL
@@ -209,6 +248,25 @@ async function getBalance() {
       walletBalance: walletBalance,
       homepage: ticker?.links?.homepage[0] || ticker?.links?.homepage[1] || ticker?.links?.homepage[2] || '',
       percentChange: (ticker?.market_data?.price_change_percentage_24h || 0).toFixed(2)
+    }
+  return balance
+}
+
+async function getBalance_CMC() {
+  let wallet = await getBSCWallet(settings.CONTRACT_ADDRESS, settings.WALLET_ADDRESS)  
+  let ticker = await getBSCPrice_CMC()
+  let currentPrice = parseFloat(ticker?.quotes?.USD?.price || 0)
+  let tokenBalance = (wallet?.result || 0)
+  let walletBalance = (tokenBalance*decimalFactor).toFixed(2)
+  let balance = {
+      tokenName: ticker?.name || '?',
+      tokenSymbol: ticker?.symbol || '?',
+      balance: (walletBalance * currentPrice).toFixed(2),
+      last: currentPrice.toFixed(numberOfDecimals(currentPrice)),
+      tokenImgUrl: ticker.logo || '',
+      walletBalance: walletBalance,
+      homepage: ticker?.urls?.website[0] || '',
+      percentChange: (ticker?.quotes?.USD?.price_change_24h || 0).toFixed(2)
     }
   return balance
 }
