@@ -1,0 +1,12 @@
+{
+  "always_run_in_app" : false,
+  "icon" : {
+    "color" : "deep-blue",
+    "glyph" : "magic"
+  },
+  "name" : "Search Mask",
+  "script" : "\/\/ let input = Pasteboard\/\/ \n\/\/ let copyText= await input.pasteString()\/\/ \n\/\/ console.log(copyText)\nconsole.log(args)\nfunction mask(t) {\n    var n, a, s, r, l, o, i;\n    return n = a = function(e, t) {\n        var n = s();\n        return (a = function(e, t) {\n            return n[e -= 298]\n        }\n        )(e, t)\n    }\n    ,\n    function(e, t) {\n        for (var n = a, s = e(); ; )\n            try {\n                if (223575 === -parseInt(n(305)) \/ 1 * (parseInt(n(312)) \/ 2) + -parseInt(n(307)) \/ 3 * (-parseInt(n(300)) \/ 4) + -parseInt(n(309)) \/ 5 * (-parseInt(n(299)) \/ 6) + -parseInt(n(304)) \/ 7 + -parseInt(n(302)) \/ 8 + parseInt(n(303)) \/ 9 * (-parseInt(n(310)) \/ 10) + parseInt(n(313)) \/ 11)\n                    break;\n                s.push(s.shift())\n            } catch (r) {\n                s.push(s.shift())\n            }\n    }(s = function() {\n        var e = [\"8rFhdwu\", \"join\", \"552272eXrEMe\", \"18ASpPXO\", \"2651558nPqZVd\", \"9378ADpTrS\", \"map\", \"508521hmwkMb\", \"charCodeAt\", \"5860CDfjHn\", \"1621250eFUCVl\", \"fromCharCode\", \"68JhSKaI\", \"8345381SePrjP\", \"split\", \"1110AREpDy\"];\n        return (s = function() {\n            return e\n        }\n        )()\n    }\n    ),\n    r = (r = btoa(t))[n(298)](\"\")[n(306)]((function(e) {\n        return String[n(311)](e[n(308)](0) + 10)\n    }\n    ))[n(301)](\"\"),\n    r\n}\nlet masked = (mask(args.plainTexts[0] || \"\"))\nconsole.log(masked)\nScript.setShortcutOutput(masked)\n\/\/ await input.copyString(masked);\nScript.complete()",
+  "share_sheet_inputs" : [
+    "plain-text"
+  ]
+}
